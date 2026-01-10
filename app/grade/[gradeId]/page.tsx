@@ -1,0 +1,646 @@
+
+
+"use client"
+
+import { useEffect, useMemo, useState } from "react"
+import { useParams } from "next/navigation"
+
+type Topic = {
+  id: string
+  title: string
+}
+
+type Exercise = {
+  prompt: string
+  answer: number
+  topicId: string
+}
+
+type ProgressData = {
+  totalSolved: number
+  solvedByTopic: Record<string, number>
+  lastTopicId?: string
+}
+
+const TARGET = 1_000_000
+
+const GRADE_TOPICS: Record<string, Topic[]> = {
+  a: [
+    { id: "add_10", title: "חיבור עד 10" },
+    { id: "sub_10", title: "חיסור עד 10" },
+    { id: "compare", title: "גדול/קטן/שווה" },
+  ],
+  b: [
+    { id: "add_20", title: "חיבור עד 20" },
+    { id: "sub_20", title: "חיסור עד 20" },
+    { id: "missing", title: "מספר חסר" },
+  ],
+  c: [
+    { id: "add_100", title: "חיבור עד 100" },
+    { id: "sub_100", title: "חיסור עד 100" },
+    { id: "mul_10", title: "כפל חד ספרתי" },
+  ],
+  d: [
+    { id: "mul_div", title: "כפל וחילוק" },
+    { id: "word", title: "בעיות מילוליות" },
+    { id: "fractions", title: "שברים בסיסיים" },
+  ],
+  e: [
+    { id: "fractions", title: "שברים" },
+    { id: "decimals", title: "עשרוניים" },
+    { id: "percent", title: "אחוזים" },
+  ],
+  f: [
+    { id: "percent", title: "אחוזים" },
+    { id: "ratio", title: "יחס" },
+    { id: "word", title: "בעיות מילוליות" },
+  ],
+}
+
+const GRADE_COLORS: Record<string, { bg: string; accent: string; border: string }> = {
+  a: { bg: "from-red-500/20", accent: "text-red-400", border: "border-red-500/30" },
+  b: { bg: "from-blue-500/20", accent: "text-blue-400", border: "border-blue-500/30" },
+  c: { bg: "from-green-500/20", accent: "text-green-400", border: "border-green-500/30" },
+  d: { bg: "from-amber-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
+  e: { bg: "from-purple-500/20", accent: "text-purple-400", border: "border-purple-500/30" },
+  f: { bg: "from-cyan-500/20", accent: "text-cyan-400", border: "border-cyan-500/30" },
+}
+
+const GRADE_ICONS: Record<string, string> = {
+  a: "🏁",
+  b: "🏎️",
+  c: "⚡",
+  d: "🔥",
+  e: "🚀",
+  f: "🏆",
+}
+
+function clampGradeId(raw: string) {
+  const id = (raw || "").toLowerCase()
+  return ["a", "b", "c", "d", "e", "f"].includes(id) ? id : "a"
+}
+
+function formatGradeName(gradeId: string) {
+  const map: Record<string, string> = {
+    a: "שכבה א׳",
+    b: "שכבה ב׳",
+    c: "שכבה ג׳",
+    d: "שכבה ד׳",
+    e: "שכבה ה׳",
+    f: "שכבה ו׳",
+  }
+  return map[gradeId] ?? "שכבה"
+}
+
+function randInt(min: number, max: number) {
+  return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function generateExercise(gradeId: string, topicId: string): Exercise {
+  if (gradeId === "a") {
+    if (topicId === "add_10") {
+      const a = randInt(0, 10)
+      const b = randInt(0, 10 - a)
+      return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
+    }
+    if (topicId === "sub_10") {
+      const a = randInt(0, 10)
+      const b = randInt(0, a)
+      return { prompt: `${a} - ${b} = ?`, answer: a - b, topicId }
+    }
+    const x = randInt(0, 10)
+    const y = randInt(0, 10)
+    const ans = x === y ? 0 : x > y ? 1 : -1
+    return {
+      prompt: `${x} ? ${y}\nכתבי: 1 עבור > , 0 עבור = , -1 עבור <`,
+      answer: ans,
+      topicId,
+    }
+  }
+
+  if (gradeId === "b") {
+    if (topicId === "add_20") {
+      const a = randInt(0, 20)
+      const b = randInt(0, 20 - a)
+      return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
+    }
+    if (topicId === "sub_20") {
+      const a = randInt(0, 20)
+      const b = randInt(0, a)
+      return { prompt: `${a} - ${b} = ?`, answer: a - b, topicId }
+    }
+    const a = randInt(0, 20)
+    const b = randInt(0, 20 - a)
+    const sum = a + b
+    const hideLeft = Math.random() < 0.5
+    return hideLeft ? { prompt: `? + ${b} = ${sum}`, answer: a, topicId } : { prompt: `${a} + ? = ${sum}`, answer: b, topicId }
+  }
+
+  if (gradeId === "c") {
+    if (topicId === "add_100") {
+      const a = randInt(0, 100)
+      const b = randInt(0, 100 - a)
+      return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
+    }
+    if (topicId === "sub_100") {
+      const a = randInt(0, 100)
+      const b = randInt(0, a)
+      return { prompt: `${a} - ${b} = ?`, answer: a - b, topicId }
+    }
+    const a = randInt(1, 10)
+    const b = randInt(1, 10)
+    return { prompt: `${a} × ${b} = ?`, answer: a * b, topicId }
+  }
+
+  if (gradeId === "d") {
+    if (topicId === "mul_div") {
+      if (Math.random() < 0.5) {
+        const a = randInt(2, 12)
+        const b = randInt(2, 12)
+        return { prompt: `${a} × ${b} = ?`, answer: a * b, topicId }
+      } else {
+        const b = randInt(2, 12)
+        const ans = randInt(2, 12)
+        const a = b * ans
+        return { prompt: `${a} ÷ ${b} = ?`, answer: ans, topicId }
+      }
+    }
+    if (topicId === "fractions") {
+      const choose = Math.random() < 0.5 ? "1/2" : "1/4"
+      const base = choose === "1/2" ? randInt(2, 20) * 2 : randInt(2, 20) * 4
+      const answer = choose === "1/2" ? base / 2 : base / 4
+      return { prompt: `${choose} מתוך ${base} = ?`, answer, topicId }
+    }
+    const a = randInt(5, 30)
+    const b = randInt(5, 30)
+    return {
+      prompt: `בעיה מילולית:\nלי יש ${a} עפרונות. קיבלתי עוד ${b}. כמה יש לי עכשיו?`,
+      answer: a + b,
+      topicId,
+    }
+  }
+
+  if (gradeId === "e") {
+    if (topicId === "decimals") {
+      const a = randInt(10, 99) / 10
+      const b = randInt(10, 99) / 10
+      const ans = Math.round((a + b) * 10) / 10
+      return { prompt: `${a} + ${b} = ? (ספרה אחת אחרי הנקודה)`, answer: ans, topicId }
+    }
+    if (topicId === "percent") {
+      const base = randInt(20, 200)
+      const p = [10, 20, 25, 50][randInt(0, 3)]
+      return { prompt: `${p}% מתוך ${base} = ?`, answer: (base * p) / 100, topicId }
+    }
+    const denom = [2, 4, 5, 10][randInt(0, 3)]
+    const numer = randInt(1, denom - 1)
+    const base = denom * randInt(2, 12)
+    return { prompt: `${numer}/${denom} מתוך ${base} = ?`, answer: (base * numer) / denom, topicId }
+  }
+
+  if (gradeId === "f") {
+    if (topicId === "ratio") {
+      const a = [1, 2, 3][randInt(0, 2)]
+      const b = [2, 3, 4][randInt(0, 2)]
+      const unit = randInt(2, 10)
+      const total = (a + b) * unit
+      const askA = Math.random() < 0.5
+      const answer = askA ? a * unit : b * unit
+      const who = askA ? "החלק הראשון" : "החלק השני"
+      return { prompt: `יחס ${a}:${b}. הסכום הכולל הוא ${total}.\nכמה הוא ${who}?`, answer, topicId }
+    }
+    if (topicId === "percent") {
+      const base = randInt(50, 400)
+      const p = [5, 10, 15, 20, 25, 50][randInt(0, 5)]
+      return { prompt: `${p}% מתוך ${base} = ?`, answer: (base * p) / 100, topicId }
+    }
+    const price = randInt(10, 60)
+    const qty = randInt(2, 8)
+    return { prompt: `בעיה מילולית:\nמחיר כרטיס הוא ${price} ₪. קנו ${qty} כרטיסים. כמה שילמו?`, answer: price * qty, topicId }
+  }
+
+  const a = randInt(1, 10)
+  const b = randInt(1, 10)
+  return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
+}
+
+function storageKey(gradeId: string) {
+  return `race_progress_${gradeId}`
+}
+
+function loadProgress(gradeId: string, topicIds: string[]): ProgressData {
+  try {
+    const raw = localStorage.getItem(storageKey(gradeId))
+    if (!raw) {
+      return { totalSolved: 0, solvedByTopic: Object.fromEntries(topicIds.map((t) => [t, 0])) }
+    }
+    const parsed = JSON.parse(raw) as ProgressData
+    const fixed: ProgressData = {
+      totalSolved: Number(parsed.totalSolved || 0),
+      solvedByTopic: { ...(parsed.solvedByTopic || {}) },
+      lastTopicId: parsed.lastTopicId,
+    }
+    for (const t of topicIds) {
+      if (typeof fixed.solvedByTopic[t] !== "number") fixed.solvedByTopic[t] = 0
+    }
+    return fixed
+  } catch {
+    return { totalSolved: 0, solvedByTopic: Object.fromEntries(topicIds.map((t) => [t, 0])) }
+  }
+}
+
+function saveProgress(gradeId: string, data: ProgressData) {
+  localStorage.setItem(storageKey(gradeId), JSON.stringify(data))
+}
+
+function MathLogo({ size = 32 }: { size?: number }) {
+  return (
+    <div className="relative rounded-full overflow-hidden border-2 border-zinc-600" style={{ width: size, height: size }}>
+      <div className="absolute inset-0 grid grid-cols-2 grid-rows-2">
+        <div className="bg-red-500 flex items-center justify-center text-white font-bold" style={{ fontSize: size / 4 }}>
+          ×
+        </div>
+        <div className="bg-green-500 flex items-center justify-center text-white font-bold" style={{ fontSize: size / 4 }}>
+          =
+        </div>
+        <div className="bg-blue-500 flex items-center justify-center text-white font-bold" style={{ fontSize: size / 4 }}>
+          ÷
+        </div>
+        <div className="bg-amber-500 flex items-center justify-center text-white font-bold" style={{ fontSize: size / 4 }}>
+          +
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ArrowRightIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  )
+}
+
+function RotateCcwIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M1 4v6h6M23 20v-6h-6" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M20.49 9A9 9 0 105.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"
+      />
+    </svg>
+  )
+}
+
+function TrophyIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 3h14M7 3v5a5 5 0 0010 0V3M5 3a2 2 0 00-2 2v2a4 4 0 004 4M19 3a2 2 0 012 2v2a4 4 0 01-4 4M12 13v4M8 21h8M10 17h4"
+      />
+    </svg>
+  )
+}
+
+function TargetIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <circle cx="12" cy="12" r="10" />
+      <circle cx="12" cy="12" r="6" />
+      <circle cx="12" cy="12" r="2" />
+    </svg>
+  )
+}
+
+function ZapIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+    </svg>
+  )
+}
+
+function SparklesIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2 2-7z"
+      />
+    </svg>
+  )
+}
+
+export default function GradePage() {
+  const p = useParams<{ gradeId?: string }>()
+  const gradeId = clampGradeId(p?.gradeId ?? "a")
+  const gradeName = formatGradeName(gradeId)
+  const colors = GRADE_COLORS[gradeId] || GRADE_COLORS.a
+  const gradeIcon = GRADE_ICONS[gradeId] || "🏁"
+
+  const topics = useMemo(() => GRADE_TOPICS[gradeId] ?? GRADE_TOPICS.a, [gradeId])
+  const topicIds = useMemo(() => topics.map((t) => t.id), [topics])
+
+  const [progress, setProgress] = useState<ProgressData | null>(null)
+  const [topicId, setTopicId] = useState<string>(topics[0]?.id ?? "add_10")
+
+  const [exercise, setExercise] = useState<Exercise | null>(null)
+  const [answerInput, setAnswerInput] = useState<string>("")
+  const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null)
+  const [streak, setStreak] = useState(0)
+
+  useEffect(() => {
+    const pr = loadProgress(gradeId, topicIds)
+    setProgress(pr)
+
+    const preferred =
+      pr.lastTopicId && topicIds.includes(pr.lastTopicId) ? pr.lastTopicId : (topics[0]?.id ?? topicIds[0])
+
+    setTopicId(preferred)
+  }, [gradeId, topicIds, topics])
+
+  useEffect(() => {
+    if (!topicId) return
+    setExercise(generateExercise(gradeId, topicId))
+    setAnswerInput("")
+    setFeedback(null)
+  }, [gradeId, topicId])
+
+  const totalSolved = progress?.totalSolved ?? 0
+  const totalPct = Math.min(100, (totalSolved / TARGET) * 100)
+
+  function nextExercise() {
+    setExercise(generateExercise(gradeId, topicId))
+    setAnswerInput("")
+    setFeedback(null)
+  }
+
+  function submitAnswer() {
+    if (!exercise || !progress) return
+
+    const normalized = answerInput.trim()
+    if (!normalized) {
+      setFeedback({ ok: false, msg: "נא להכניס תשובה" })
+      return
+    }
+
+    const user = Number(normalized)
+    if (!Number.isFinite(user)) {
+      setFeedback({ ok: false, msg: "התשובה חייבת להיות מספר" })
+      return
+    }
+
+    const ok = user === exercise.answer
+    if (!ok) {
+      setFeedback({ ok: false, msg: "לא נכון. נסו שוב 🙂" })
+      setStreak(0)
+      return
+    }
+
+    const updated: ProgressData = {
+      totalSolved: progress.totalSolved + 1,
+      solvedByTopic: {
+        ...progress.solvedByTopic,
+        [exercise.topicId]: (progress.solvedByTopic[exercise.topicId] ?? 0) + 1,
+      },
+      lastTopicId: topicId,
+    }
+
+    setProgress(updated)
+    saveProgress(gradeId, updated)
+    setStreak((s) => s + 1)
+
+    setFeedback({ ok: true, msg: streak >= 2 ? `מדהים! רצף של ${streak + 1}! 🔥` : "נכון! ✅" })
+
+    setTimeout(() => {
+      nextExercise()
+    }, 450)
+  }
+
+  function resetProgress() {
+    const fresh: ProgressData = {
+      totalSolved: 0,
+      solvedByTopic: Object.fromEntries(topicIds.map((t) => [t, 0])),
+      lastTopicId: topicId,
+    }
+    setProgress(fresh)
+    saveProgress(gradeId, fresh)
+    setFeedback(null)
+    setStreak(0)
+  }
+
+  return (
+    <main className="min-h-screen bg-zinc-950 text-white" dir="rtl">
+      {/* Racing stripes */}
+      <div className="fixed top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-500 via-orange-500 to-red-500 z-50" />
+      <div className="fixed top-0 right-0 w-2 h-full bg-gradient-to-b from-amber-500 via-orange-500 to-red-500 z-50" />
+
+      <div className="mx-auto max-w-4xl px-6 py-8">
+        {/* Navigation */}
+        <div className="mb-6 flex items-center justify-between gap-3">
+          <a
+            href="/"
+            className="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold border border-zinc-800 hover:border-amber-500/50 hover:bg-zinc-800 transition-all"
+          >
+            <ArrowRightIcon className="w-4 h-4" />
+            חזרה לבית
+          </a>
+
+          <button
+            onClick={resetProgress}
+            className="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold border border-zinc-800 hover:border-red-500/50 hover:bg-zinc-800 transition-all text-zinc-400 hover:text-red-400"
+            title="איפוס רק במחשב הזה"
+          >
+            <RotateCcwIcon className="w-4 h-4" />
+            איפוס
+          </button>
+        </div>
+
+        {/* Header */}
+        <header className={`mb-8 rounded-2xl bg-gradient-to-br ${colors.bg} to-zinc-900 p-6 border ${colors.border}`}>
+          <div className="flex items-center gap-4 mb-3">
+            <div className="text-5xl">{gradeIcon}</div>
+            <div>
+              <h1 className="text-3xl font-black text-white">{gradeName}</h1>
+              <p className="text-zinc-400">תרגילים ואתגרים מתמטיים</p>
+            </div>
+            <div className="mr-auto">
+              <MathLogo size={48} />
+            </div>
+          </div>
+        </header>
+
+        {/* Overall Progress */}
+        <section className="mb-6 rounded-2xl bg-zinc-900 p-6 border border-zinc-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-amber-500/20">
+                <TrophyIcon className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <div className="text-lg font-bold">התקדמות כללית</div>
+                <div className="text-sm text-zinc-500">
+                  {totalSolved.toLocaleString()} / {TARGET.toLocaleString()}
+                </div>
+              </div>
+            </div>
+            <div className="text-2xl font-black text-amber-400">{totalPct.toFixed(3)}%</div>
+          </div>
+
+          <div className="h-4 w-full rounded-full bg-zinc-800 overflow-hidden">
+            <div
+              className="h-4 rounded-full bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 transition-all duration-500 relative"
+              style={{ width: `${totalPct}%` }}
+            >
+              <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_15px,rgba(255,255,255,0.1)_15px,rgba(255,255,255,0.1)_30px)]" />
+            </div>
+          </div>
+        </section>
+
+        {/* Topics */}
+        <section className="mb-6 rounded-2xl bg-zinc-900 p-6 border border-zinc-800">
+          <div className="flex items-center gap-2 mb-4">
+            <TargetIcon className="w-5 h-5 text-amber-400" />
+            <span className="text-lg font-bold">נושאים</span>
+          </div>
+
+          <div className="flex flex-wrap gap-2 mb-6">
+            {topics.map((t) => {
+              const active = t.id === topicId
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => {
+                    setTopicId(t.id)
+                    if (progress) {
+                      const updated = { ...progress, lastTopicId: t.id }
+                      setProgress(updated)
+                      saveProgress(gradeId, updated)
+                    }
+                  }}
+                  className={
+                    active
+                      ? "rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-bold text-zinc-900 shadow-lg shadow-amber-500/25"
+                      : "rounded-xl bg-zinc-800 px-5 py-2.5 text-sm font-semibold text-zinc-300 hover:bg-zinc-700 border border-zinc-700 hover:border-zinc-600 transition-all"
+                  }
+                >
+                  {t.title}
+                </button>
+              )
+            })}
+          </div>
+
+          <div className="space-y-3">
+            {topics.map((t) => {
+              const solved = progress?.solvedByTopic?.[t.id] ?? 0
+              const displayTarget = Math.max(1, Math.floor(TARGET / topics.length))
+              const pct = Math.min(100, (solved / displayTarget) * 100)
+              const isActive = t.id === topicId
+
+              return (
+                <div
+                  key={t.id}
+                  className={`rounded-xl p-4 border transition-all ${
+                    isActive ? "bg-zinc-800 border-amber-500/50" : "bg-zinc-800/50 border-zinc-700/50"
+                  }`}
+                >
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <div className="font-semibold flex items-center gap-2">
+                      {isActive && <SparklesIcon className="w-4 h-4 text-amber-400" />}
+                      {t.title}
+                    </div>
+                    <div className="text-zinc-400">
+                      {solved.toLocaleString()} / {displayTarget.toLocaleString()}
+                    </div>
+                  </div>
+
+                  <div className="h-2 w-full rounded-full bg-zinc-700 overflow-hidden">
+                    <div
+                      className={`h-2 rounded-full transition-all ${
+                        isActive ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-zinc-500"
+                      }`}
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </section>
+
+        {/* Exercise */}
+        <section className="rounded-2xl bg-zinc-900 p-6 border border-zinc-800">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ZapIcon className="w-5 h-5 text-amber-400" />
+              <span className="text-lg font-bold">תרגיל נוכחי</span>
+            </div>
+            {streak > 0 && (
+              <div className="flex items-center gap-1 bg-orange-500/20 px-3 py-1 rounded-full">
+                <span className="text-orange-400 text-sm font-bold">🔥 רצף: {streak}</span>
+              </div>
+            )}
+          </div>
+
+          <div className="whitespace-pre-line rounded-xl bg-zinc-800 p-6 text-xl font-semibold text-center border border-zinc-700 mb-5">
+            {exercise?.prompt ?? "טוען..."}
+          </div>
+
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              value={answerInput}
+              onChange={(e) => setAnswerInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitAnswer()
+              }}
+              className="flex-1 rounded-xl border-2 border-zinc-700 bg-zinc-800 px-5 py-4 text-lg font-semibold outline-none focus:border-amber-500 transition-colors placeholder:text-zinc-500"
+              placeholder="הכנס תשובה..."
+              inputMode="decimal"
+              autoFocus
+            />
+
+            <button
+              onClick={submitAnswer}
+              className="rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-6 py-4 text-base font-bold text-zinc-900 hover:from-amber-400 hover:to-orange-400 transition-all shadow-lg shadow-amber-500/25"
+            >
+              בדיקה ✓
+            </button>
+
+            <button
+              onClick={nextExercise}
+              className="rounded-xl bg-zinc-800 px-6 py-4 text-base font-semibold text-zinc-300 hover:bg-zinc-700 border border-zinc-700 transition-all"
+            >
+              דלג ⟫
+            </button>
+          </div>
+
+          {feedback && (
+            <div
+              className={`mt-5 rounded-xl p-4 text-center font-semibold ${
+                feedback.ok
+                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                  : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+              }`}
+            >
+              {feedback.msg}
+            </div>
+          )}
+        </section>
+
+        {/* Footer */}
+        <footer className="mt-12 text-center text-zinc-600 text-sm">
+          <div className="flex items-center justify-center gap-3">
+            <MathLogo size={20} />
+            <span>המרוץ למיליון © 2026</span>
+          </div>
+        </footer>
+      </div>
+    </main>
+  )
+}
