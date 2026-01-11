@@ -731,7 +731,7 @@ type ProgressData = {
 }
 
 const TARGET = 1_000_000 // ✅ יעד בנקודות
-const POINTS_PER_EXERCISE = 500 // ✅ כל תרגיל = 500 נקודות
+const POINTS_PER_EXERCISE = 100 // ✅ כל תרגיל = 500 נקודות
 
 // ✅ נושאים חדשים לפי מה שביקשת
 const GRADE_TOPICS: Record<string, Topic[]> = {
