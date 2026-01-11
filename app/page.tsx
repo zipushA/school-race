@@ -4,8 +4,6 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 
-
-
 const TARGET = 1_000_000
 
 type GradeInfo = { id: string; name: string; icon: string }
