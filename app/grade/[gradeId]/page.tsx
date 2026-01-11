@@ -20,6 +20,8 @@ type ProgressData = {
 }
 
 const TARGET = 1_000_000
+const POINTS_PER_EXERCISE = 500
+
 
 // ✅ נושאים חדשים לפי מה שביקשת
 const GRADE_TOPICS: Record<string, Topic[]> = {
@@ -425,9 +427,9 @@ export default function GradePage() {
     setAnswerInput("")
     setFeedback(null)
   }, [gradeId, topicId])
-
-  const totalSolved = progress?.totalSolved ?? 0
-  const totalPct = Math.min(100, (totalSolved / TARGET) * 100)
+const totalSolved = progress?.totalSolved ?? 0
+const totalPoints = totalSolved * POINTS_PER_EXERCISE
+const totalPct = Math.min(100, (totalPoints / TARGET) * 100)
 
   function nextExercise() {
     setExercise(generateExercise(gradeId, topicId))
@@ -555,7 +557,8 @@ export default function GradePage() {
               <div>
                 <div className="text-lg font-bold">התקדמות כללית (גלובלי)</div>
                 <div className="text-sm text-zinc-500">
-                  {totalSolved.toLocaleString()} / {TARGET.toLocaleString()}
+                  {totalPoints.toLocaleString()} / {TARGET.toLocaleString()} נקודות
+
                 </div>
               </div>
             </div>
