@@ -228,6 +228,24 @@ function storageKey(gradeId: string) {
   return `race_progress_${gradeId}`
 }
 
+function lastTopicStorageKey(gradeId: string) {
+  return `race_last_topic_${gradeId}`
+}
+
+function loadLastTopicId(gradeId: string) {
+  try {
+    return localStorage.getItem(lastTopicStorageKey(gradeId)) || ""
+  } catch {
+    return ""
+  }
+}
+
+function saveLastTopicId(gradeId: string, topicId: string) {
+  try {
+    localStorage.setItem(lastTopicStorageKey(gradeId), topicId)
+  } catch { }
+}
+
 function loadProgress(gradeId: string, topicIds: string[]): ProgressData {
   try {
     const raw = localStorage.getItem(storageKey(gradeId))
@@ -336,6 +354,22 @@ function SparklesIcon({ className }: { className?: string }) {
     </svg>
   )
 }
+async function fetchCloudProgress(gradeId: string, topicIds: string[]) {
+  const res = await fetch(`/api/progress/get?gradeId=${gradeId}`, { cache: "no-store" })
+  const json = await res.json()
+  const row = json?.data
+  if (!row) return null
+
+  const solvedByTopic: Record<string, number> = { ...(row.solved_by_topic ?? {}) }
+  for (const t of topicIds) {
+    if (typeof solvedByTopic[t] !== "number") solvedByTopic[t] = 0
+  }
+
+  return {
+    totalSolved: Number(row.total_solved ?? 0),
+    solvedByTopic,
+  } as ProgressData
+}
 
 export default function GradePage() {
   const p = useParams<{ gradeId?: string }>()
@@ -356,14 +390,28 @@ export default function GradePage() {
   const [streak, setStreak] = useState(0)
 
   useEffect(() => {
-    const pr = loadProgress(gradeId, topicIds)
-    setProgress(pr)
-
-    const preferred =
-      pr.lastTopicId && topicIds.includes(pr.lastTopicId) ? pr.lastTopicId : (topics[0]?.id ?? topicIds[0])
-
+    const last = loadLastTopicId(gradeId)
+    const preferred = last && topicIds.includes(last) ? last : (topics[0]?.id ?? topicIds[0])
     setTopicId(preferred)
   }, [gradeId, topicIds, topics])
+  useEffect(() => {
+    let alive = true
+
+    const refresh = async () => {
+      const pr = await fetchCloudProgress(gradeId, topicIds)
+      if (!alive || !pr) return
+      setProgress(pr)
+    }
+
+    refresh()
+    const id = window.setInterval(refresh, 5000)
+
+    return () => {
+      alive = false
+      window.clearInterval(id)
+    }
+  }, [gradeId, topicIds])
+
 
   useEffect(() => {
     if (!topicId) return
@@ -403,47 +451,33 @@ export default function GradePage() {
       return
     }
 
-    const updated: ProgressData = {
-      totalSolved: progress.totalSolved + 1,
-      solvedByTopic: {
-        ...progress.solvedByTopic,
-        [exercise.topicId]: (progress.solvedByTopic[exercise.topicId] ?? 0) + 1,
-      },
-      lastTopicId: topicId,
-    }
+    saveLastTopicId(gradeId, topicId)
 
-    // ✅ פה בדיוק: עדכון בענן
-    fetch("/api/progress/increment", {
+    await fetch("/api/progress/increment", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ gradeId, topicId: exercise.topicId }),
-    }).catch(() => {
-      // לא מפילים את המשחק אם יש בעיית רשת
     })
 
-    // ממשיכים עם הלוקאל כמו שהיה
-    setProgress(updated)
-    saveProgress(gradeId, updated)
-    setStreak((s) => s + 1)
+    const pr = await fetchCloudProgress(gradeId, topicIds)
+    if (pr) setProgress(pr)
 
+    setStreak((s) => s + 1)
     setFeedback({ ok: true, msg: streak >= 2 ? `מדהים! רצף של ${streak + 1}! 🔥` : "נכון! ✅" })
 
+    setTimeout(() => nextExercise(), 450)
     setTimeout(() => {
       nextExercise()
     }, 450)
   }
 
   function resetProgress() {
-    const fresh: ProgressData = {
-      totalSolved: 0,
-      solvedByTopic: Object.fromEntries(topicIds.map((t) => [t, 0])),
-      lastTopicId: topicId,
-    }
-    setProgress(fresh)
-    saveProgress(gradeId, fresh)
-    setFeedback(null)
-    setStreak(0)
-  }
+  // איפוס מקומי בלבד: רצף + הודעה + (אופציונלי) נושא אחרון
+  setFeedback(null)
+  setStreak(0)
+  saveLastTopicId(gradeId, topics[0]?.id ?? topicIds[0] ?? "")
+}
+
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white" dir="rtl">
@@ -528,12 +562,9 @@ export default function GradePage() {
                   key={t.id}
                   onClick={() => {
                     setTopicId(t.id)
-                    if (progress) {
-                      const updated = { ...progress, lastTopicId: t.id }
-                      setProgress(updated)
-                      saveProgress(gradeId, updated)
-                    }
+                    saveLastTopicId(gradeId, t.id)
                   }}
+
                   className={
                     active
                       ? "rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 px-5 py-2.5 text-sm font-bold text-zinc-900 shadow-lg shadow-amber-500/25"
@@ -631,8 +662,8 @@ export default function GradePage() {
           {feedback && (
             <div
               className={`mt-5 rounded-xl p-4 text-center font-semibold ${feedback.ok
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
                 }`}
             >
               {feedback.msg}

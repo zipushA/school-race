@@ -169,7 +169,7 @@ export default function HomePage() {
     }
 
     refresh()
-    const id = setInterval(refresh, 2000) // כמעט realtime
+    const id = setInterval(refresh, 5000) // כמעט realtime
     return () => clearInterval(id)
   }, [])
 
