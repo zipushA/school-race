@@ -4,6 +4,8 @@
 import { useEffect, useMemo, useState } from "react"
 import Image from "next/image"
 
+
+
 const TARGET = 1_000_000
 
 type GradeInfo = { id: string; name: string; icon: string }
@@ -125,6 +127,14 @@ function ChevronLeftIcon({ className }: { className?: string }) {
 }
 
 export default function HomePage() {
+  useEffect(() => {
+    ; (async () => {
+      const res = await fetch("/api/progress/get")
+      const json = await res.json()
+      console.log("DB TEST VIA API:", json)
+    })()
+  }, [])
+
   const grades: GradeInfo[] = useMemo(
     () => [
       { id: "a", name: "שכבה א׳", icon: "🏁" },
@@ -142,16 +152,27 @@ export default function HomePage() {
 
   useEffect(() => {
     setMounted(true)
-    const refresh = () => {
-      const next: Record<string, number> = {}
-      for (const g of grades) next[g.id] = loadTotalSolved(g.id)
-      setTotals(next)
+
+    const refresh = async () => {
+      try {
+        const res = await fetch("/api/progress/get", { cache: "no-store" })
+        const json = await res.json()
+
+        const next: Record<string, number> = {}
+        for (const row of json?.data ?? []) {
+          next[row.grade_id] = Number(row.total_solved ?? 0)
+        }
+        setTotals(next)
+      } catch {
+        // לא מפילים את האתר אם יש בעיית רשת
+      }
     }
 
     refresh()
-    window.addEventListener("storage", refresh)
-    return () => window.removeEventListener("storage", refresh)
-  }, [grades])
+    const id = setInterval(refresh, 2000) // כמעט realtime
+    return () => clearInterval(id)
+  }, [])
+
 
   const totalAll = Object.values(totals).reduce((a, b) => a + b, 0)
 

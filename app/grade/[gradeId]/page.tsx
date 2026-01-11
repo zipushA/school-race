@@ -381,7 +381,7 @@ export default function GradePage() {
     setFeedback(null)
   }
 
-  function submitAnswer() {
+  async function submitAnswer() {
     if (!exercise || !progress) return
 
     const normalized = answerInput.trim()
@@ -412,6 +412,16 @@ export default function GradePage() {
       lastTopicId: topicId,
     }
 
+    // ✅ פה בדיוק: עדכון בענן
+    fetch("/api/progress/increment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ gradeId, topicId: exercise.topicId }),
+    }).catch(() => {
+      // לא מפילים את המשחק אם יש בעיית רשת
+    })
+
+    // ממשיכים עם הלוקאל כמו שהיה
     setProgress(updated)
     saveProgress(gradeId, updated)
     setStreak((s) => s + 1)
@@ -546,9 +556,8 @@ export default function GradePage() {
               return (
                 <div
                   key={t.id}
-                  className={`rounded-xl p-4 border transition-all ${
-                    isActive ? "bg-zinc-800 border-amber-500/50" : "bg-zinc-800/50 border-zinc-700/50"
-                  }`}
+                  className={`rounded-xl p-4 border transition-all ${isActive ? "bg-zinc-800 border-amber-500/50" : "bg-zinc-800/50 border-zinc-700/50"
+                    }`}
                 >
                   <div className="flex items-center justify-between text-sm mb-2">
                     <div className="font-semibold flex items-center gap-2">
@@ -562,9 +571,8 @@ export default function GradePage() {
 
                   <div className="h-2 w-full rounded-full bg-zinc-700 overflow-hidden">
                     <div
-                      className={`h-2 rounded-full transition-all ${
-                        isActive ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-zinc-500"
-                      }`}
+                      className={`h-2 rounded-full transition-all ${isActive ? "bg-gradient-to-r from-amber-500 to-orange-500" : "bg-zinc-500"
+                        }`}
                       style={{ width: `${pct}%` }}
                     />
                   </div>
@@ -622,11 +630,10 @@ export default function GradePage() {
 
           {feedback && (
             <div
-              className={`mt-5 rounded-xl p-4 text-center font-semibold ${
-                feedback.ok
+              className={`mt-5 rounded-xl p-4 text-center font-semibold ${feedback.ok
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                   : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
-              }`}
+                }`}
             >
               {feedback.msg}
             </div>
