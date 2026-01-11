@@ -160,7 +160,9 @@ export default function HomePage() {
 
         const next: Record<string, number> = {}
         for (const row of json?.data ?? []) {
-          next[row.grade_id] = Number(row.total_solved ?? 0)
+          const POINTS_PER_EXERCISE = 500
+          next[row.grade_id] = Number(row.total_solved ?? 0) * POINTS_PER_EXERCISE
+
         }
         setTotals(next)
       } catch {
