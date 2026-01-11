@@ -219,7 +219,6 @@ export default function HomePage() {
           {/* Description */}
           <div className="text-center mb-10">
             <p className="text-zinc-300 text-lg max-w-2xl mx-auto">בוחרים שכבה, פותרים תרגילים, ועוקבים אחרי ההתקדמות! 🏁</p>
-            <p className="mt-2 text-xs text-zinc-500">* ההתקדמות נשמרת במחשב הזה (local)</p>
           </div>
 
           {/* Grade Cards */}
