@@ -8,7 +8,7 @@
 
 // type Exercise = {
 //   prompt: string
-//   answer: number | string // מספר או "a/b"
+//   answer: number | string // number OR "a/b"
 //   topicId: string
 // }
 
@@ -17,10 +17,12 @@
 //   solvedByTopic: Record<string, number>
 // }
 
-// const TARGET = 1_000_000 // ✅ יעד בנקודות
-// const POINTS_PER_EXERCISE = 100 // ✅ כל תרגיל = 500 נקודות
+// const TARGET = 1_000_000 // יעד בנקודות
+// const POINTS_PER_EXERCISE = 100 // ⭐ נקודות לכל תרגיל
 
-// // ✅ נושאים חדשים לפי מה שביקשת
+// /* =========================
+//    ✅ נושאים לפי מה שביקשת
+// ========================= */
 // const GRADE_TOPICS: Record<string, Topic[]> = {
 //   a: [
 //     { id: "add_10", title: "חיבור עד 10" },
@@ -50,13 +52,13 @@
 //   ],
 // }
 
-// const GRADE_COLORS: Record<string, { bg: string; accent: string; border: string }> = {
-//   a: { bg: "from-red-500/20", accent: "text-red-400", border: "border-red-500/30" },
-//   b: { bg: "from-blue-500/20", accent: "text-blue-400", border: "border-blue-500/30" },
-//   c: { bg: "from-green-500/20", accent: "text-green-400", border: "border-green-500/30" },
-//   d: { bg: "from-amber-500/20", accent: "text-amber-400", border: "border-amber-500/30" },
-//   e: { bg: "from-purple-500/20", accent: "text-purple-400", border: "border-purple-500/30" },
-//   f: { bg: "from-cyan-500/20", accent: "text-cyan-400", border: "border-cyan-500/30" },
+// const GRADE_COLORS: Record<string, { bg: string; border: string }> = {
+//   a: { bg: "from-red-500/20", border: "border-red-500/30" },
+//   b: { bg: "from-blue-500/20", border: "border-blue-500/30" },
+//   c: { bg: "from-green-500/20", border: "border-green-500/30" },
+//   d: { bg: "from-amber-500/20", border: "border-amber-500/30" },
+//   e: { bg: "from-purple-500/20", border: "border-purple-500/30" },
+//   f: { bg: "from-cyan-500/20", border: "border-cyan-500/30" },
 // }
 
 // const GRADE_ICONS: Record<string, string> = {
@@ -89,8 +91,9 @@
 //   return Math.floor(Math.random() * (max - min + 1)) + min
 // }
 
-// /* ---------- שברים ---------- */
-
+// /* =========================
+//    ✅ שברים: יצירה/השוואה
+// ========================= */
 // function gcd(a: number, b: number) {
 //   a = Math.abs(a)
 //   b = Math.abs(b)
@@ -149,13 +152,45 @@
 // }
 
 // function divFrac(a: Frac, b: Frac): Frac {
-//   // b הוא שבר תקין (מגרילים proper => n!=0), אבל נשמור בטיחות
-//   if (b.n === 0) return simp({ n: 0, d: 1 })
 //   return simp({ n: a.n * b.d, d: a.d * b.n })
 // }
 
-// /* ---------- Last topic local storage ---------- */
+// /* =========================
+//    ✅ תמריצים (Rewards)
+// ========================= */
+// const INCENTIVES: { points: number; label: string; emoji: string; msg: string }[] = [
+//   { points: 2_000, emoji: "🥉", label: "ברונזה", msg: "פתיחה חזקה! המשיכו בקצב הזה 💪" },
+//   { points: 10_000, emoji: "🥈", label: "כסף", msg: "שכבה על טורבו! אלופים! 🏎️" },
+//   { points: 25_000, emoji: "🥇", label: "זהב", msg: "זהב! ההתקדמות שלכם מרשימה בטירוף 🔥" },
+//   { points: 50_000, emoji: "🏆", label: "גביע", msg: "גביע לשכבה! הישג ענק 👑" },
+//   { points: 100_000, emoji: "🚀", label: "רקטה", msg: "מאה אלף נקודות! אתם טסים 🚀" },
+//   { points: 250_000, emoji: "💥", label: "פיצוץ", msg: "רבע מיליון! זה כבר אגדה 💥" },
+//   { points: 500_000, emoji: "⚡", label: "סופר־מהירים", msg: "חצי מיליון! עוד קצת למיליון ⚡" },
+//   { points: 1_000_000, emoji: "🎉", label: "מיליון!", msg: "מיליון נקודות!!! אליפות עולם 🥳🥇" },
+// ]
 
+// function incentivesStorageKey(gradeId: string) {
+//   return `race_incentive_${gradeId}`
+// }
+
+// function getIncentiveIndex(points: number) {
+//   let idx = -1
+//   for (let i = 0; i < INCENTIVES.length; i++) {
+//     if (points >= INCENTIVES[i].points) idx = i
+//   }
+//   return idx
+// }
+
+// function nextIncentive(points: number) {
+//   for (const it of INCENTIVES) {
+//     if (points < it.points) return it
+//   }
+//   return null
+// }
+
+// /* =========================
+//    ✅ נושא אחרון (local)
+// ========================= */
 // function lastTopicStorageKey(gradeId: string) {
 //   return `race_last_topic_${gradeId}`
 // }
@@ -174,8 +209,9 @@
 //   } catch {}
 // }
 
-// /* ---------- Cloud progress ---------- */
-
+// /* =========================
+//    ✅ Cloud progress (polling)
+// ========================= */
 // async function fetchCloudProgress(gradeId: string, topicIds: string[]) {
 //   const res = await fetch(`/api/progress/get?gradeId=${gradeId}`, { cache: "no-store" })
 //   const json = await res.json()
@@ -193,8 +229,9 @@
 //   } as ProgressData
 // }
 
-// /* ---------- Generate exercise by grade/topic ---------- */
-
+// /* =========================
+//    ✅ יצירת תרגילים לפי שכבה/נושא
+// ========================= */
 // function generateExercise(gradeId: string, topicId: string): Exercise {
 //   // שכבה א׳ - חיבור/חיסור עד 10
 //   if (gradeId === "a") {
@@ -223,7 +260,6 @@
 //       const b = randInt(0, 4)
 //       return { prompt: `${a} × ${b} = ?`, answer: a * b, topicId }
 //     }
-//     // div_4
 //     const b = randInt(1, 4)
 //     const ans = randInt(0, 10)
 //     const a = b * ans
@@ -233,7 +269,6 @@
 //   // שכבה ד׳ - כפל/חילוק ב-10/100/1000
 //   if (gradeId === "d") {
 //     const k = topicId === "scale_10" ? 10 : topicId === "scale_100" ? 100 : 1000
-
 //     if (Math.random() < 0.5) {
 //       const a = randInt(1, 200)
 //       return { prompt: `${a} × ${k} = ?`, answer: a * k, topicId }
@@ -254,11 +289,10 @@
 //       return { prompt: `${fracToString(a)} + ${fracToString(b)} = ?`, answer: fracToString(c), topicId }
 //     }
 
-//     // frac_sub - נוודא חיובי
+//     // חיסור - נוודא תוצאה לא שלילית
 //     let x = a
 //     let y = b
-//     const diff = subFrac(x, y)
-//     if (diff.n < 0) {
+//     if (subFrac(x, y).n < 0) {
 //       x = b
 //       y = a
 //     }
@@ -276,7 +310,6 @@
 //       return { prompt: `${fracToString(a)} × ${fracToString(b)} = ?`, answer: fracToString(c), topicId }
 //     }
 
-//     // frac_div
 //     const c = divFrac(a, b)
 //     return { prompt: `${fracToString(a)} ÷ ${fracToString(b)} = ?`, answer: fracToString(c), topicId }
 //   }
@@ -287,8 +320,9 @@
 //   return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
 // }
 
-// /* ---------- UI Icons ---------- */
-
+// /* =========================
+//    ✅ UI Icons
+// ========================= */
 // function MathLogo({ size = 32 }: { size?: number }) {
 //   return (
 //     <div className="relative rounded-full overflow-hidden border-2 border-zinc-600" style={{ width: size, height: size }}>
@@ -322,11 +356,7 @@
 //   return (
 //     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
 //       <path strokeLinecap="round" strokeLinejoin="round" d="M1 4v6h6M23 20v-6h-6" />
-//       <path
-//         strokeLinecap="round"
-//         strokeLinejoin="round"
-//         d="M20.49 9A9 9 0 105.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15"
-//       />
+//       <path strokeLinecap="round" strokeLinejoin="round" d="M20.49 9A9 9 0 105.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 013.51 15" />
 //     </svg>
 //   )
 // }
@@ -334,11 +364,7 @@
 // function TrophyIcon({ className }: { className?: string }) {
 //   return (
 //     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-//       <path
-//         strokeLinecap="round"
-//         strokeLinejoin="round"
-//         d="M5 3h14M7 3v5a5 5 0 0010 0V3M5 3a2 2 0 00-2 2v2a4 4 0 004 4M19 3a2 2 0 012 2v2a4 4 0 01-4 4M12 13v4M8 21h8M10 17h4"
-//       />
+//       <path strokeLinecap="round" strokeLinejoin="round" d="M5 3h14M7 3v5a5 5 0 0010 0V3M5 3a2 2 0 00-2 2v2a4 4 0 004 4M19 3a2 2 0 012 2v2a4 4 0 01-4 4M12 13v4M8 21h8M10 17h4" />
 //     </svg>
 //   )
 // }
@@ -364,17 +390,14 @@
 // function SparklesIcon({ className }: { className?: string }) {
 //   return (
 //     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-//       <path
-//         strokeLinecap="round"
-//         strokeLinejoin="round"
-//         d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2 2-7z"
-//       />
+//       <path strokeLinecap="round" strokeLinejoin="round" d="M5 3v4M3 5h4M6 17v4M4 19h4M13 3l2 7 7 2-7 2-2 7-2-7-7-2 7-2 2-7z" />
 //     </svg>
 //   )
 // }
 
-// /* ---------- Page ---------- */
-
+// /* =========================
+//    ✅ Page
+// ========================= */
 // export default function GradePage() {
 //   const p = useParams<{ gradeId?: string }>()
 //   const gradeId = clampGradeId(p?.gradeId ?? "a")
@@ -392,6 +415,8 @@
 //   const [answerInput, setAnswerInput] = useState<string>("")
 //   const [feedback, setFeedback] = useState<{ ok: boolean; msg: string } | null>(null)
 //   const [streak, setStreak] = useState(0)
+
+//   const [rewardToast, setRewardToast] = useState<{ title: string; msg: string; emoji: string } | null>(null)
 
 //   // נושא אחרון (מקומי)
 //   useEffect(() => {
@@ -427,10 +452,38 @@
 //     setFeedback(null)
 //   }, [gradeId, topicId])
 
-//   // ✅ נקודות גלובליות
 //   const totalSolved = progress?.totalSolved ?? 0
 //   const totalPoints = totalSolved * POINTS_PER_EXERCISE
 //   const totalPct = Math.min(100, (totalPoints / TARGET) * 100)
+
+//   // תמריצים: קפיצת הודעה פעם אחת לכל הישג
+//   useEffect(() => {
+//     if (!progress) return
+
+//     const idx = getIncentiveIndex(totalPoints)
+//     if (idx < 0) return
+
+//     let lastShown = -1
+//     try {
+//       lastShown = Number(localStorage.getItem(incentivesStorageKey(gradeId)) ?? "-1")
+//     } catch {}
+
+//     if (idx > lastShown) {
+//       const it = INCENTIVES[idx]
+//       setRewardToast({
+//         title: `${it.emoji} הישג חדש: ${it.label}`,
+//         msg: it.msg,
+//         emoji: it.emoji,
+//       })
+
+//       try {
+//         localStorage.setItem(incentivesStorageKey(gradeId), String(idx))
+//       } catch {}
+
+//       const t = window.setTimeout(() => setRewardToast(null), 4500)
+//       return () => window.clearTimeout(t)
+//     }
+//   }, [gradeId, progress, totalPoints])
 
 //   function nextExercise() {
 //     setExercise(generateExercise(gradeId, topicId))
@@ -478,34 +531,22 @@
 
 //     saveLastTopicId(gradeId, topicId)
 
-//     // ✅ עדכון מיידי במסך (אופטימי): יזיז את כל הגרפים ב־+500 מיד
-//     setProgress((prev) => {
-//       if (!prev) return prev
-//       return {
-//         totalSolved: prev.totalSolved + 1,
-//         solvedByTopic: {
-//           ...prev.solvedByTopic,
-//           [exercise.topicId]: (prev.solvedByTopic[exercise.topicId] ?? 0) + 1,
-//         },
-//       }
-//     })
-
 //     try {
 //       await fetch("/api/progress/increment", {
 //         method: "POST",
 //         headers: { "Content-Type": "application/json" },
 //         body: JSON.stringify({ gradeId, topicId: exercise.topicId }),
 //       })
-//       // לא חייבים למשוך מיד (הפולינג ישווה), אבל נשאיר דיוק:
+
 //       const pr = await fetchCloudProgress(gradeId, topicIds)
 //       if (pr) setProgress(pr)
 //     } catch {
-//       // אם יש תקלה רגעית - לא מפילים את המשחק
+//       // לא מפילים את המשחק אם יש תקלה רגעית
 //     }
 
 //     setStreak((s) => {
 //       const next = s + 1
-//       setFeedback({ ok: true, msg: next >= 3 ? `מדהים! רצף של ${next}! 🔥` : "נכון! ✅ +500" })
+//       setFeedback({ ok: true, msg: next >= 3 ? `מדהים! רצף של ${next}! 🔥` : `נכון! ✅ +${POINTS_PER_EXERCISE} נק׳` })
 //       return next
 //     })
 
@@ -516,11 +557,45 @@
 //     // איפוס מקומי בלבד: רצף + הודעה + נושא אחרון
 //     setFeedback(null)
 //     setStreak(0)
+//     setRewardToast(null)
 //     saveLastTopicId(gradeId, topics[0]?.id ?? topicIds[0] ?? "")
+//     try {
+//       localStorage.removeItem(incentivesStorageKey(gradeId))
+//     } catch {}
 //   }
+
+//   const next = nextIncentive(totalPoints)
+//   const curIdx = getIncentiveIndex(totalPoints)
+//   const current = curIdx >= 0 ? INCENTIVES[curIdx] : null
 
 //   return (
 //     <main className="min-h-screen bg-zinc-950 text-white" dir="rtl">
+//       {/* Toast תמריצים */}
+//       {rewardToast && (
+//         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] w-[min(92vw,560px)]">
+//           <div className="rounded-2xl border border-amber-500/30 bg-zinc-900/95 backdrop-blur px-5 py-4 shadow-2xl shadow-black/60">
+//             <div className="flex items-start gap-3">
+//               <div className="h-11 w-11 rounded-2xl bg-amber-500/15 border border-amber-500/25 flex items-center justify-center text-2xl">
+//                 {rewardToast.emoji}
+//               </div>
+//               <div className="flex-1">
+//                 <div className="text-base font-black text-amber-300">{rewardToast.title}</div>
+//                 <div className="text-sm text-zinc-200 mt-1">{rewardToast.msg}</div>
+//                 <div className="text-xs text-zinc-500 mt-2">סה״כ נקודות: {totalPoints.toLocaleString()}</div>
+//               </div>
+//               <button
+//                 onClick={() => setRewardToast(null)}
+//                 className="text-zinc-400 hover:text-white transition"
+//                 aria-label="סגירה"
+//                 title="סגירה"
+//               >
+//                 ✕
+//               </button>
+//             </div>
+//           </div>
+//         </div>
+//       )}
+
 //       {/* Racing stripes */}
 //       <div className="fixed top-0 left-0 w-2 h-full bg-gradient-to-b from-amber-500 via-orange-500 to-red-500 z-50" />
 //       <div className="fixed top-0 right-0 w-2 h-full bg-gradient-to-b from-amber-500 via-orange-500 to-red-500 z-50" />
@@ -539,7 +614,7 @@
 //           <button
 //             onClick={resetProgress}
 //             className="flex items-center gap-2 rounded-xl bg-zinc-900 px-4 py-3 text-sm font-semibold border border-zinc-800 hover:border-red-500/50 hover:bg-zinc-800 transition-all text-zinc-400 hover:text-red-400"
-//             title="איפוס רצף ונושא במחשב הזה"
+//             title="איפוס מקומי (רצף/נושא/תמריצים) במחשב הזה"
 //           >
 //             <RotateCcwIcon className="w-4 h-4" />
 //             איפוס
@@ -571,6 +646,7 @@
 //                 <div className="text-lg font-bold">התקדמות כללית (גלובלי)</div>
 //                 <div className="text-sm text-zinc-500">
 //                   {totalPoints.toLocaleString()} / {TARGET.toLocaleString()} נקודות
+//                   <span className="mr-2 text-zinc-600">(תרגיל = {POINTS_PER_EXERCISE} נק׳)</span>
 //                 </div>
 //               </div>
 //             </div>
@@ -584,6 +660,46 @@
 //             >
 //               <div className="absolute inset-0 bg-[repeating-linear-gradient(90deg,transparent,transparent_15px,rgba(255,255,255,0.1)_15px,rgba(255,255,255,0.1)_30px)]" />
 //             </div>
+//           </div>
+//         </section>
+
+//         {/* Incentives */}
+//         <section className="mb-6 rounded-2xl bg-zinc-900 p-6 border border-zinc-800">
+//           <div className="flex items-center justify-between gap-3">
+//             <div className="text-lg font-bold flex items-center gap-2">🎯 תמריצים והישגים</div>
+//             {current ? (
+//               <div className="px-3 py-1 rounded-full text-sm font-bold bg-amber-500/15 border border-amber-500/25 text-amber-300">
+//                 {current.emoji} {current.label}
+//               </div>
+//             ) : (
+//               <div className="px-3 py-1 rounded-full text-sm font-bold bg-zinc-800 border border-zinc-700 text-zinc-300">
+//                 עוד רגע הישג ראשון ✨
+//               </div>
+//             )}
+//           </div>
+
+//           <div className="mt-4">
+//             {next ? (
+//               <div className="rounded-xl bg-zinc-800/60 border border-zinc-700 p-4">
+//                 <div className="flex items-center justify-between text-sm mb-2">
+//                   <div className="font-semibold text-zinc-200">
+//                     היעד הבא: <span className="text-amber-300 font-black">{next.emoji} {next.label}</span>
+//                   </div>
+//                   <div className="text-zinc-400">צריך עוד {(next.points - totalPoints).toLocaleString()} נק׳</div>
+//                 </div>
+
+//                 <div className="h-2 w-full rounded-full bg-zinc-700 overflow-hidden">
+//                   <div
+//                     className="h-2 rounded-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all"
+//                     style={{ width: `${Math.min(100, (totalPoints / next.points) * 100)}%` }}
+//                   />
+//                 </div>
+//               </div>
+//             ) : (
+//               <div className="rounded-xl bg-emerald-500/10 border border-emerald-500/25 p-4 text-emerald-300 font-bold">
+//                 🎉 כל ההישגים הושלמו! אתם אלופים!
+//               </div>
+//             )}
 //           </div>
 //         </section>
 
@@ -619,12 +735,11 @@
 //           <div className="space-y-3">
 //             {topics.map((t) => {
 //               const solved = progress?.solvedByTopic?.[t.id] ?? 0
-//               const solvedPoints = solved * POINTS_PER_EXERCISE
 
-//               // ✅ יעד לנושא בנקודות (מחלקים את מיליון הנקודות בין הנושאים)
-//               const displayTargetPoints = Math.max(1, Math.floor(TARGET / Math.max(1, topics.length)))
-//               const pct = Math.min(100, (solvedPoints / displayTargetPoints) * 100)
-
+//               // יעד לתצוגת פס התקדמות לפי נקודות, אבל לפי "כמות פתרונות לנושא" אין לנו נקודות לכל נושא
+//               // לכן נשאיר את הפס לפי כמות תרגילים לנושא (כמו שהיה), אבל המספרים הכלליים הם נקודות
+//               const displayTargetSolved = Math.max(1, Math.floor((TARGET / POINTS_PER_EXERCISE) / Math.max(1, topics.length)))
+//               const pct = Math.min(100, (solved / displayTargetSolved) * 100)
 //               const isActive = t.id === topicId
 
 //               return (
@@ -640,7 +755,7 @@
 //                       {t.title}
 //                     </div>
 //                     <div className="text-zinc-400">
-//                       {solvedPoints.toLocaleString()} / {displayTargetPoints.toLocaleString()} נק׳
+//                       {solved.toLocaleString()} / {displayTargetSolved.toLocaleString()} תרגילים
 //                     </div>
 //                   </div>
 
@@ -684,8 +799,8 @@
 //                 if (e.key === "Enter") submitAnswer()
 //               }}
 //               className="flex-1 rounded-xl border-2 border-zinc-700 bg-zinc-800 px-5 py-4 text-lg font-semibold outline-none focus:border-amber-500 transition-colors placeholder:text-zinc-500"
-//               placeholder={typeof exercise?.answer === "string" ? "כתבי תשובה בצורה a/b (למשל 3/4)" : "הכנס תשובה..."}
-//               inputMode={typeof exercise?.answer === "string" ? "text" : "decimal"}
+//               placeholder={typeof exercise?.answer === "string" ? "כתבי תשובה בצורה a/b (למשל 3/4)" : "הכניסי תשובה..."}
+//               inputMode="decimal"
 //               autoFocus
 //             />
 
@@ -750,14 +865,16 @@ const TARGET = 1_000_000 // יעד בנקודות
 const POINTS_PER_EXERCISE = 100 // ⭐ נקודות לכל תרגיל
 
 /* =========================
-   ✅ נושאים לפי מה שביקשת
+   ✅ Topics (לפי הבקשה שלך)
 ========================= */
 const GRADE_TOPICS: Record<string, Topic[]> = {
   a: [
-    { id: "add_10", title: "חיבור עד 10" },
-    { id: "sub_10", title: "חיסור עד 10" },
+    { id: "add_20", title: "חיבור עד 20" },
+    { id: "sub_20", title: "חיסור עד 20" },
   ],
   b: [
+    { id: "add_100", title: "חיבור עד 100" },
+    { id: "sub_100", title: "חיסור עד 100" },
     { id: "mul_0", title: "כפל ב־0" },
     { id: "mul_1", title: "כפל ב־1" },
     { id: "mul_2", title: "כפל ב־2" },
@@ -821,7 +938,7 @@ function randInt(min: number, max: number) {
 }
 
 /* =========================
-   ✅ שברים: יצירה/השוואה
+   ✅ Fractions helpers
 ========================= */
 function gcd(a: number, b: number) {
   a = Math.abs(a)
@@ -885,7 +1002,7 @@ function divFrac(a: Frac, b: Frac): Frac {
 }
 
 /* =========================
-   ✅ תמריצים (Rewards)
+   ✅ Incentives (Rewards)
 ========================= */
 const INCENTIVES: { points: number; label: string; emoji: string; msg: string }[] = [
   { points: 2_000, emoji: "🥉", label: "ברונזה", msg: "פתיחה חזקה! המשיכו בקצב הזה 💪" },
@@ -918,7 +1035,7 @@ function nextIncentive(points: number) {
 }
 
 /* =========================
-   ✅ נושא אחרון (local)
+   ✅ Last topic (local)
 ========================= */
 function lastTopicStorageKey(gradeId: string) {
   return `race_last_topic_${gradeId}`
@@ -959,27 +1076,41 @@ async function fetchCloudProgress(gradeId: string, topicIds: string[]) {
 }
 
 /* =========================
-   ✅ יצירת תרגילים לפי שכבה/נושא
+   ✅ Exercise generator
 ========================= */
 function generateExercise(gradeId: string, topicId: string): Exercise {
-  // שכבה א׳ - חיבור/חיסור עד 10
+  // ✅ שכבה א׳ - חיבור/חיסור עד 20
   if (gradeId === "a") {
-    if (topicId === "add_10") {
-      const a = randInt(0, 10)
-      const b = randInt(0, 10 - a)
+    if (topicId === "add_20") {
+      const a = randInt(0, 20)
+      const b = randInt(0, 20 - a)
       return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
     }
-    const a = randInt(0, 10)
+
+    // sub_20
+    const a = randInt(0, 20)
     const b = randInt(0, a)
     return { prompt: `${a} - ${b} = ?`, answer: a - b, topicId }
   }
 
-  // שכבה ב׳ - כפל ב-0/1/2
+  // ✅ שכבה ב׳ - חיבור/חיסור עד 100 + כפל 0/1/2
   if (gradeId === "b") {
+    if (topicId === "add_100") {
+      const a = randInt(0, 100)
+      const b = randInt(0, 100 - a)
+      return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
+    }
+
+    if (topicId === "sub_100") {
+      const a = randInt(0, 100)
+      const b = randInt(0, a)
+      return { prompt: `${a} - ${b} = ?`, answer: a - b, topicId }
+    }
+
     const a = randInt(0, 12)
     if (topicId === "mul_0") return { prompt: `${a} × 0 = ?`, answer: 0, topicId }
     if (topicId === "mul_1") return { prompt: `${a} × 1 = ?`, answer: a, topicId }
-    return { prompt: `${a} × 2 = ?`, answer: a * 2, topicId } // mul_2
+    return { prompt: `${a} × 2 = ?`, answer: a * 2, topicId }
   }
 
   // שכבה ג׳ - כפל/חילוק עד 4
@@ -1018,7 +1149,6 @@ function generateExercise(gradeId: string, topicId: string): Exercise {
       return { prompt: `${fracToString(a)} + ${fracToString(b)} = ?`, answer: fracToString(c), topicId }
     }
 
-    // חיסור - נוודא תוצאה לא שלילית
     let x = a
     let y = b
     if (subFrac(x, y).n < 0) {
@@ -1043,14 +1173,13 @@ function generateExercise(gradeId: string, topicId: string): Exercise {
     return { prompt: `${fracToString(a)} ÷ ${fracToString(b)} = ?`, answer: fracToString(c), topicId }
   }
 
-  // fallback
   const a = randInt(1, 10)
   const b = randInt(1, 10)
   return { prompt: `${a} + ${b} = ?`, answer: a + b, topicId }
 }
 
 /* =========================
-   ✅ UI Icons
+   ✅ Icons
 ========================= */
 function MathLogo({ size = 32 }: { size?: number }) {
   return (
@@ -1138,7 +1267,7 @@ export default function GradePage() {
   const topicIds = useMemo(() => topics.map((t) => t.id), [topics])
 
   const [progress, setProgress] = useState<ProgressData | null>(null)
-  const [topicId, setTopicId] = useState<string>(topics[0]?.id ?? topicIds[0] ?? "add_10")
+  const [topicId, setTopicId] = useState<string>(topics[0]?.id ?? topicIds[0] ?? "")
 
   const [exercise, setExercise] = useState<Exercise | null>(null)
   const [answerInput, setAnswerInput] = useState<string>("")
@@ -1147,14 +1276,14 @@ export default function GradePage() {
 
   const [rewardToast, setRewardToast] = useState<{ title: string; msg: string; emoji: string } | null>(null)
 
-  // נושא אחרון (מקומי)
+  // last topic (local)
   useEffect(() => {
     const last = loadLastTopicId(gradeId)
-    const preferred = last && topicIds.includes(last) ? last : (topics[0]?.id ?? topicIds[0])
+    const preferred = last && topicIds.includes(last) ? last : (topics[0]?.id ?? topicIds[0] ?? "")
     setTopicId(preferred)
   }, [gradeId, topicIds, topics])
 
-  // progress גלובלי מהענן (polling)
+  // cloud progress polling
   useEffect(() => {
     let alive = true
 
@@ -1166,14 +1295,13 @@ export default function GradePage() {
 
     refresh()
     const id = window.setInterval(refresh, 5000)
-
     return () => {
       alive = false
       window.clearInterval(id)
     }
   }, [gradeId, topicIds])
 
-  // יצירת תרגיל חדש כשהנושא משתנה
+  // new exercise on topic change
   useEffect(() => {
     if (!topicId) return
     setExercise(generateExercise(gradeId, topicId))
@@ -1185,7 +1313,7 @@ export default function GradePage() {
   const totalPoints = totalSolved * POINTS_PER_EXERCISE
   const totalPct = Math.min(100, (totalPoints / TARGET) * 100)
 
-  // תמריצים: קפיצת הודעה פעם אחת לכל הישג
+  // incentives toast
   useEffect(() => {
     if (!progress) return
 
@@ -1231,7 +1359,6 @@ export default function GradePage() {
 
     const expected = exercise.answer
 
-    // מספר
     if (typeof expected === "number") {
       const user = Number(normalized)
       if (!Number.isFinite(user)) {
@@ -1244,7 +1371,6 @@ export default function GradePage() {
         return
       }
     } else {
-      // שבר "a/b"
       const userF = parseFrac(normalized)
       if (!userF) {
         setFeedback({ ok: false, msg: "בשברים יש לרשום בצורה a/b (לדוגמה 3/4)" })
@@ -1270,12 +1396,15 @@ export default function GradePage() {
       const pr = await fetchCloudProgress(gradeId, topicIds)
       if (pr) setProgress(pr)
     } catch {
-      // לא מפילים את המשחק אם יש תקלה רגעית
+      // ignore
     }
 
     setStreak((s) => {
       const next = s + 1
-      setFeedback({ ok: true, msg: next >= 3 ? `מדהים! רצף של ${next}! 🔥` : `נכון! ✅ +${POINTS_PER_EXERCISE} נק׳` })
+      setFeedback({
+        ok: true,
+        msg: next >= 3 ? `מדהים! רצף של ${next}! 🔥` : `נכון! ✅ +${POINTS_PER_EXERCISE} נק׳`,
+      })
       return next
     })
 
@@ -1283,7 +1412,6 @@ export default function GradePage() {
   }
 
   function resetProgress() {
-    // איפוס מקומי בלבד: רצף + הודעה + נושא אחרון
     setFeedback(null)
     setStreak(0)
     setRewardToast(null)
@@ -1299,7 +1427,7 @@ export default function GradePage() {
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white" dir="rtl">
-      {/* Toast תמריצים */}
+      {/* Toast */}
       {rewardToast && (
         <div className="fixed top-4 left-1/2 -translate-x-1/2 z-[999] w-[min(92vw,560px)]">
           <div className="rounded-2xl border border-amber-500/30 bg-zinc-900/95 backdrop-blur px-5 py-4 shadow-2xl shadow-black/60">
@@ -1312,12 +1440,7 @@ export default function GradePage() {
                 <div className="text-sm text-zinc-200 mt-1">{rewardToast.msg}</div>
                 <div className="text-xs text-zinc-500 mt-2">סה״כ נקודות: {totalPoints.toLocaleString()}</div>
               </div>
-              <button
-                onClick={() => setRewardToast(null)}
-                className="text-zinc-400 hover:text-white transition"
-                aria-label="סגירה"
-                title="סגירה"
-              >
+              <button onClick={() => setRewardToast(null)} className="text-zinc-400 hover:text-white transition" aria-label="סגירה">
                 ✕
               </button>
             </div>
@@ -1330,7 +1453,7 @@ export default function GradePage() {
       <div className="fixed top-0 right-0 w-2 h-full bg-gradient-to-b from-amber-500 via-orange-500 to-red-500 z-50" />
 
       <div className="mx-auto max-w-4xl px-6 py-8">
-        {/* Navigation */}
+        {/* Nav */}
         <div className="mb-6 flex items-center justify-between gap-3">
           <a
             href="/"
@@ -1412,7 +1535,10 @@ export default function GradePage() {
               <div className="rounded-xl bg-zinc-800/60 border border-zinc-700 p-4">
                 <div className="flex items-center justify-between text-sm mb-2">
                   <div className="font-semibold text-zinc-200">
-                    היעד הבא: <span className="text-amber-300 font-black">{next.emoji} {next.label}</span>
+                    היעד הבא:{" "}
+                    <span className="text-amber-300 font-black">
+                      {next.emoji} {next.label}
+                    </span>
                   </div>
                   <div className="text-zinc-400">צריך עוד {(next.points - totalPoints).toLocaleString()} נק׳</div>
                 </div>
@@ -1464,9 +1590,6 @@ export default function GradePage() {
           <div className="space-y-3">
             {topics.map((t) => {
               const solved = progress?.solvedByTopic?.[t.id] ?? 0
-
-              // יעד לתצוגת פס התקדמות לפי נקודות, אבל לפי "כמות פתרונות לנושא" אין לנו נקודות לכל נושא
-              // לכן נשאיר את הפס לפי כמות תרגילים לנושא (כמו שהיה), אבל המספרים הכלליים הם נקודות
               const displayTargetSolved = Math.max(1, Math.floor((TARGET / POINTS_PER_EXERCISE) / Math.max(1, topics.length)))
               const pct = Math.min(100, (solved / displayTargetSolved) * 100)
               const isActive = t.id === topicId
@@ -1551,9 +1674,7 @@ export default function GradePage() {
           {feedback && (
             <div
               className={`mt-5 rounded-xl p-4 text-center font-semibold ${
-                feedback.ok
-                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                  : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                feedback.ok ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
               }`}
             >
               {feedback.msg}
